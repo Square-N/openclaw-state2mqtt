@@ -1,0 +1,183 @@
+{
+  "id": "state2mqtt",
+  "name": "OpenClaw Agent State → MQTT",
+  "description": "Publishes OpenClaw agent state to MQTT, with Home Assistant MQTT Discovery built in.",
+  "categories": [
+    "infrastructure"
+  ],
+  "activation": {
+    "onStartup": true
+  },
+  "uiHints": {
+    "host": {
+      "label": "MQTT host",
+      "placeholder": "192.168.1.10",
+      "help": "Hostname, IP, or an mqtt:// / mqtts:// URL. Empty keeps the bridge idle."
+    },
+    "port": {
+      "label": "MQTT port",
+      "placeholder": "1883"
+    },
+    "tls": {
+      "label": "TLS",
+      "help": "Use MQTT over TLS; the default port becomes 8883."
+    },
+    "rejectUnauthorized": {
+      "label": "Verify certificate",
+      "help": "Keep on for public brokers; turn off only for a trusted self-signed LAN broker."
+    },
+    "username": {
+      "label": "MQTT username"
+    },
+    "password": {
+      "label": "MQTT password",
+      "sensitive": true
+    },
+    "discoveryPrefix": {
+      "label": "Discovery prefix",
+      "placeholder": "homeassistant"
+    },
+    "baseTopic": {
+      "label": "Base topic",
+      "help": "Empty = openclaw/gw/<instance>"
+    },
+    "instance": {
+      "label": "Instance name",
+      "help": "Set this when running more than one Gateway, or when the hostname should not appear in MQTT topics."
+    },
+    "publishIntervalMs": {
+      "label": "Heartbeat (ms)",
+      "help": "Also raises expire_after so entities do not flap unavailable."
+    },
+    "approvalPollMs": {
+      "label": "Approval poll (ms)",
+      "help": "0 disables the pending-approval probe."
+    },
+    "publishLastTool": {
+      "label": "Publish last tool",
+      "help": "Turn off to keep tool names off the broker."
+    },
+    "publishSessionDetails": {
+      "label": "Publish session details",
+      "help": "Hashed session ids and redacted tool names as state attributes."
+    },
+    "openclawBin": {
+      "label": "openclaw CLI path",
+      "help": "Only needed when auto-detection fails for the approval probe."
+    }
+  },
+  "configContracts": {
+    "secretInputs": {
+      "paths": [
+        {
+          "path": "password",
+          "expected": "string"
+        }
+      ]
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "host": {
+        "type": "string",
+        "description": "MQTT broker host or URL (mqtt:// / mqtts://). Empty keeps the bridge idle."
+      },
+      "port": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 65535
+      },
+      "tls": {
+        "type": "boolean",
+        "description": "Use MQTT over TLS (mqtts)"
+      },
+      "rejectUnauthorized": {
+        "type": "boolean",
+        "description": "Verify the broker certificate when tls is on"
+      },
+      "username": {
+        "type": "string"
+      },
+      "password": {
+        "type": "string",
+        "description": "MQTT broker password (prefer a SecretRef; never commit it)"
+      },
+      "discoveryPrefix": {
+        "type": "string",
+        "description": "HA MQTT discovery prefix (default homeassistant)"
+      },
+      "baseTopic": {
+        "type": "string",
+        "description": "State topic root; empty = openclaw/gw/<instance>"
+      },
+      "instance": {
+        "type": "string",
+        "description": "Display/instance name; set it when running more than one Gateway or when the hostname should not appear in MQTT topics"
+      },
+      "publishIntervalMs": {
+        "type": "integer",
+        "minimum": 2000,
+        "maximum": 300000,
+        "description": "Heartbeat interval; also raises expire_after automatically"
+      },
+      "approvalPollMs": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 300000,
+        "description": "0 disables the pending-approval probe"
+      },
+      "openclawBin": {
+        "type": "string",
+        "description": "Path to the openclaw CLI used for the approval probe; empty = auto-detect"
+      },
+      "publishSessionDetails": {
+        "type": "boolean",
+        "description": "Publish hashed session ids and redacted tool names as state attributes"
+      },
+      "publishLastTool": {
+        "type": "boolean",
+        "description": "Publish the most recent tool name. Turn off to keep tool usage off the broker"
+      },
+      "keepaliveSec": {
+        "type": "integer",
+        "minimum": 10,
+        "maximum": 300
+      },
+      "connackTimeoutMs": {
+        "type": "integer",
+        "minimum": 2000,
+        "maximum": 60000
+      },
+      "maxTurnAgeMs": {
+        "type": "integer",
+        "minimum": 60000,
+        "maximum": 21600000,
+        "description": "A 'working' session with no activity for this long is treated as crashed"
+      },
+      "idleSessionTtlMs": {
+        "type": "integer",
+        "minimum": 60000,
+        "maximum": 86400000,
+        "description": "Idle session records older than this are dropped from memory"
+      },
+      "sweepIntervalMs": {
+        "type": "integer",
+        "minimum": 5000,
+        "maximum": 300000
+      },
+      "expireAfterSec": {
+        "type": "integer",
+        "minimum": 30,
+        "maximum": 3600,
+        "description": "HA marks entities unavailable if nothing arrives for this long"
+      },
+      "errorHoldMs": {
+        "type": "integer",
+        "minimum": 10000,
+        "maximum": 3600000
+      }
+    }
+  }
+}
