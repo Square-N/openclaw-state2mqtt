@@ -22,8 +22,8 @@ Priority: `waiting_approval` > `working` > `error` > `idle`.
 ## Install
 
 ```bash
-# from ClawHub (replace YOUR-ORG with the publishing scope)
-openclaw plugins install clawhub:YOUR-ORG/openclaw-state2mqtt
+# from ClawHub
+openclaw plugins install clawhub:square-n/openclaw-state2mqtt
 
 # or from a local checkout
 openclaw plugins install -l /path/to/state2mqtt --force
