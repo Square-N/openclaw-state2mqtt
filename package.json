@@ -1,6 +1,6 @@
 {
   "name": "openclaw-state2mqtt",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Publish OpenClaw agent state to MQTT, with Home Assistant MQTT Discovery built in",
   "type": "module",
   "main": "./index.js",

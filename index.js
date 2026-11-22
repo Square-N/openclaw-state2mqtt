@@ -90,11 +90,14 @@ export default {
       publisherRef?.(force);
     };
 
+    // Session identity must be identical across before_agent_run,
+    // after_tool_call and agent_end. `sessionId` is the stable per-session
+    // incarnation; `runId` changes per turn and must never become a key.
     const sessionKeyOf = (event, ctx) =>
+      ctx.sessionId ||
+      event.sessionId ||
       ctx.sessionKey ||
       event.sessionKey ||
-      ctx.sessionId ||
-      ctx.runId ||
       "default";
 
     const guard = (fn) => (event, ctx) => {
@@ -125,12 +128,16 @@ export default {
     registerHook("after_tool_call", guard((event, ctx) => {
       const key = sessionKeyOf(event, ctx);
       const toolName = sanitizeToolName(event.toolName);
-      // A tool call proves a turn is running. An existing idle record only
-      // gets its tool name updated: a late callback must not revive it.
-      if (state.isWorking(key) || !state.sessions.has(key)) {
+      // Only update a session this bridge already opened from a real agent
+      // turn. Creating one here let auxiliary/async tool callbacks mint
+      // phantom "working" records that never receive agent_end (HA then stays
+      // on "working" until the stale sweep).
+      if (state.sessions.has(key) && state.isWorking(key)) {
         state.markWorking(key, toolName);
-      } else {
+      } else if (state.sessions.has(key)) {
         state.markTool(key, toolName);
+      } else {
+        log("debug", `${PLUGIN_ID}: untracked tool call ignored (${shortHash(key)})`);
       }
       publishState();
       if (state.pendingApprovals > 0) emitProbeRequest?.();

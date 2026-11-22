@@ -196,6 +196,92 @@ test("publishLastTool=false keeps tool names off the broker", async () => {
   }
 });
 
+test("an untracked tool call cannot mint a phantom working session", async () => {
+  const broker = await startBroker();
+  const hooks = new Map();
+  const logs = [];
+  const lifecycle = {};
+  plugin.register(
+    makeApi(
+      {
+        host: "127.0.0.1",
+        port: broker.port,
+        instance: "ghost",
+        publishIntervalMs: 2000,
+        approvalPollMs: 0,
+      },
+      hooks,
+      logs,
+      lifecycle,
+    ),
+  );
+
+  try {
+    await waitFor(
+      () => broker.topics.get("openclaw/gw/ghost/availability") === "online",
+      "availability online",
+    );
+    hooks.get("after_tool_call")({ toolName: "exec" }, { sessionKey: "not-a-real-turn" });
+    await sleep(150);
+    assert.equal(broker.topics.get("openclaw/gw/ghost/state"), "idle");
+    assert.equal(broker.topics.get("openclaw/gw/ghost/sessions"), "0");
+  } finally {
+    lifecycle.dispose?.();
+    await sleep(30);
+    await broker.close();
+  }
+});
+
+test("sessionId is the stable key across before/tool/end hooks", async () => {
+  const broker = await startBroker();
+  const hooks = new Map();
+  const logs = [];
+  const lifecycle = {};
+  plugin.register(
+    makeApi(
+      {
+        host: "127.0.0.1",
+        port: broker.port,
+        instance: "stable",
+        publishIntervalMs: 2000,
+        approvalPollMs: 0,
+      },
+      hooks,
+      logs,
+      lifecycle,
+    ),
+  );
+
+  try {
+    await waitFor(
+      () => broker.topics.get("openclaw/gw/stable/availability") === "online",
+      "availability online",
+    );
+    hooks.get("before_agent_run")({}, { sessionId: "sid-1", sessionKey: "agent:main:x" });
+    await waitFor(
+      () => broker.topics.get("openclaw/gw/stable/state") === "working",
+      "working state",
+    );
+    hooks.get("after_tool_call")({ toolName: "exec" }, { sessionId: "sid-1" });
+    await waitFor(
+      () => broker.topics.get("openclaw/gw/stable/last_tool") === "exec",
+      "tool tracked under sessionId",
+    );
+    assert.equal(broker.topics.get("openclaw/gw/stable/sessions"), "1");
+    hooks.get("agent_end")({ success: true, durationMs: 900 }, { sessionId: "sid-1" });
+    await waitFor(
+      () =>
+        broker.topics.get("openclaw/gw/stable/state") === "idle" &&
+        broker.topics.get("openclaw/gw/stable/sessions") === "0",
+      "idle after canonical-key turn",
+    );
+  } finally {
+    lifecycle.dispose?.();
+    await sleep(30);
+    await broker.close();
+  }
+});
+
 test("an unconfigured or non-live registration stays inert", () => {
   const hooks = new Map();
   const logs = [];
